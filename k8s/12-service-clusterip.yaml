@@ -1,0 +1,19 @@
+# ClusterIP Service -> exposes Deployment #2 (app-clusterip)
+# ClusterIP is the DEFAULT service type. It gets a virtual IP from the
+# cluster's internal service range (10.96.0.0/12 in minikube) that is only
+# routable inside the cluster. Pods reach it by IP or by DNS name:
+#   http://svc-clusterip.assignment4.svc.cluster.local
+# Nothing outside the cluster (your laptop, the internet) can reach it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-clusterip
+  namespace: assignment4
+spec:
+  type: ClusterIP
+  selector:
+    app: app-clusterip
+  ports:
+    - name: http
+      port: 80               # port on the ClusterIP
+      targetPort: 8080       # containerPort inside the pod

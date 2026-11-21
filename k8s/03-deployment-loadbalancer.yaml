@@ -1,0 +1,63 @@
+# Deployment #3 - exposed by a LoadBalancer Service (see 13-service-loadbalancer.yaml)
+# Reachable from outside the cluster through an EXTERNAL-IP (minikube tunnel).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-loadbalancer
+  namespace: assignment4
+  labels:
+    app: app-loadbalancer
+spec:
+  replicas: 2                      # two pods -> lets us see load-balancing between pods
+  selector:
+    matchLabels:
+      app: app-loadbalancer                      # must match the pod template labels below
+  template:
+    metadata:
+      labels:
+        app: app-loadbalancer                    # the Service selects pods by this label
+    spec:
+      containers:
+        - name: pod-name-app
+          image: pod-name-app:1.0  # our custom image (loaded with: minikube image load)
+          imagePullPolicy: Never   # use the local image, never pull from Docker Hub
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            # Downward API: Kubernetes injects the pod's own metadata
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: APP_NAME
+              value: app-loadbalancer
+            - name: SERVICE_TYPE
+              value: LoadBalancer
+          readinessProbe:          # pod receives traffic only when this succeeds
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:           # container is restarted if this keeps failing
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

@@ -1,0 +1,7 @@
+# A dedicated namespace keeps every resource of this assignment together
+# and lets us clean up everything with one command:
+#   kubectl delete namespace assignment4
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: assignment4

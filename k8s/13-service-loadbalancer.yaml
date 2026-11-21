@@ -1,0 +1,19 @@
+# LoadBalancer Service -> exposes Deployment #3 (app-loadbalancer)
+# On a cloud provider (AWS/GCP/Azure) this provisions a real external load
+# balancer with a public IP. Minikube has no cloud provider, so EXTERNAL-IP stays
+# <pending> until you run `minikube tunnel`, which assigns an external IP
+# and routes traffic from your machine into the cluster.
+# (A LoadBalancer service is built on top of NodePort + ClusterIP.)
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-loadbalancer
+  namespace: assignment4
+spec:
+  type: LoadBalancer
+  selector:
+    app: app-loadbalancer
+  ports:
+    - name: http
+      port: 8080             # external port (>1024 so minikube tunnel needs no sudo on macOS)
+      targetPort: 8080       # containerPort inside the pod
