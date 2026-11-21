@@ -44,6 +44,7 @@ All outputs below are real outputs captured while running this project (also sav
 │   ├── 12-service-clusterip.yaml    # ClusterIP service    -> Deployment #2
 │   └── 13-service-loadbalancer.yaml # LoadBalancer service -> Deployment #3
 ├── outputs/                         # Captured terminal output of every verification step
+├── screenshots/                     # Screenshots of every step (embedded below)
 └── README.md
 ```
 
@@ -146,6 +147,9 @@ Kubernetes control plane is running at https://127.0.0.1:60608
 CoreDNS is running at https://127.0.0.1:60608/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 ```
 
+![Minikube installation and verification](screenshots/01-minikube-install-verify.png)
+
+
 ---
 
 ## 4. Build the custom Docker image
@@ -163,6 +167,9 @@ docker rm -f podtest
 minikube image load pod-name-app:1.0
 minikube image ls | grep pod-name-app     # -> docker.io/library/pod-name-app:1.0
 ```
+
+![Build custom image and load into Minikube](screenshots/02-image-build-and-load.png)
+
 
 **Why `minikube image load`?** Minikube runs its own container runtime (containerd) inside the node, which cannot see images built by Docker Desktop on the host. `image load` copies the image in, so no registry (Docker Hub) is needed.
 
@@ -224,6 +231,9 @@ app-loadbalancer-5897f995b7-mqxcw   1/1     Running   0          8s    10.244.0.
 app-nodeport-8468d95644-cbth8       1/1     Running   0          9s    10.244.0.5    minikube
 app-nodeport-8468d95644-gkdwl       1/1     Running   0          9s    10.244.0.6    minikube
 ```
+
+![Deployments and pods running](screenshots/03-deployments-and-pods.png)
+
 Pod names follow `<deployment>-<replicaset-hash>-<random>`; the `10.244.0.x` IPs are pod-network addresses, only valid inside the cluster.
 
 ---
@@ -254,6 +264,9 @@ svc-clusterip      10.244.0.7:8080,10.244.0.8:8080    14s
 svc-loadbalancer   10.244.0.10:8080,10.244.0.9:8080   14s
 svc-nodeport       10.244.0.5:8080,10.244.0.6:8080    14s
 ```
+
+![Services and endpoints](screenshots/04-services-and-endpoints.png)
+
 How to read it:
 - Every service gets a **CLUSTER-IP** (internal virtual IP), even NodePort and LoadBalancer: the types build on each other (**ClusterIP ⊂ NodePort ⊂ LoadBalancer**).
 - `80:30080/TCP`: the NodePort service listens on port 80 of its ClusterIP and on port **30080 of every node**.
@@ -303,6 +316,9 @@ Hello from pod: app-clusterip-7c87d8c86d-z2wf5 (app=app-clusterip, service=Clust
 ```
 ✅ Expected outcome: timeout from outside; inside the cluster, both pods (`8zwhl`, `z2wf5`) answer.
 
+![ClusterIP: fails from host, works inside the cluster](screenshots/05-clusterip-demo.png)
+
+
 ### b. NodePort: pods accessible through `<NodeIP>:30080`
 
 A NodePort service opens the same static port (here **30080**, range 30000–32767) on **every node**. Any client that can reach a node's IP can reach the pods, while the service is still reachable inside the cluster through its ClusterIP.
@@ -342,6 +358,12 @@ $ minikube service svc-nodeport -n assignment4 --url
 http://127.0.0.1:60718
 Hello from pod: app-nodeport-8468d95644-gkdwl (app=app-nodeport, service=NodePort)
 ```
+![NodePort: works from a pod and from the node](screenshots/06-nodeport-demo.png)
+
+NodePort app opened in a browser on the host through `minikube service svc-nodeport -n assignment4 --url`:
+
+![NodePort in the browser](screenshots/07-nodeport-browser.png)
+
 > **Note on the Docker driver (macOS/Windows):** the node IP `192.168.49.2` lives inside Docker Desktop's private VM network, which the host cannot route to. That is why step 3 times out and `minikube service --url` is used to forward a localhost port to the NodePort. On **Linux**, or with a VM driver such as **VirtualBox**, `curl http://$(minikube ip):30080` works directly from the host. In a real cluster, NodePort makes pods reachable to any machine that can reach a node's IP.
 
 ### c. LoadBalancer: pods accessible from outside the cluster
@@ -383,6 +405,12 @@ Hello from pod: app-loadbalancer-5897f995b7-kqmsz (app=app-loadbalancer, service
 $ curl -s http://127.0.0.1:8080/api
 {"app": "app-loadbalancer", "pod_name": "app-loadbalancer-5897f995b7-mqxcw", "pod_ip": "10.244.0.10", "node_name": "minikube", "service_type": "LoadBalancer", "time_utc": "2026-11-21 15:25:25"}
 ```
+![LoadBalancer: pending -> minikube tunnel -> EXTERNAL-IP -> works from host](screenshots/08-loadbalancer-demo.png)
+
+LoadBalancer app opened in a browser at `http://127.0.0.1:8080` (EXTERNAL-IP):
+
+![LoadBalancer in the browser](screenshots/09-loadbalancer-browser.png)
+
 > The service port is **8080** (not 80) so `minikube tunnel` on macOS does not need `sudo` to bind a privileged port (< 1024).
 > With the Docker driver on macOS the external IP is `127.0.0.1`; with other drivers it is a routable IP such as `10.x.x.x`.
 
@@ -393,6 +421,9 @@ ClusterIP     http://10.106.189.74:80            -> FAIL (no route / timeout)
 NodePort      http://192.168.49.2:30080          -> FAIL (no route / timeout)
 LoadBalancer  http://127.0.0.1:8080              -> OK   Hello from pod: app-loadbalancer-5897f995b7-kqmsz ...
 ```
+
+![Same request from host to all three service types](screenshots/10-comparison-from-host.png)
+
 
 | Service type | Inside cluster | Via node IP:port | From outside (external IP) | Typical use |
 |--------------|:--------------:|:----------------:|:--------------------------:|-------------|
