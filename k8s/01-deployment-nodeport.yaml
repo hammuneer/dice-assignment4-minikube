@@ -19,8 +19,8 @@ spec:
     spec:
       containers:
         - name: pod-name-app
-          image: pod-name-app:1.0  # our custom image (loaded with: minikube image load)
-          imagePullPolicy: Never   # use the local image, never pull from Docker Hub
+          image: hammuneer/pod-name-app:1.0  # our custom image, public on Docker Hub
+          imagePullPolicy: IfNotPresent  # pull from Docker Hub once, then reuse the cached copy
           ports:
             - containerPort: 8080
               name: http

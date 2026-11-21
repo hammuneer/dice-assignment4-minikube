@@ -33,7 +33,7 @@ All outputs below are real outputs captured while running this project (also sav
 .
 ├── app/
 │   └── app.py                       # Python (stdlib only) web app that prints the pod name
-├── Dockerfile                       # Builds the custom image pod-name-app:1.0
+├── Dockerfile                       # Builds the custom image (published as hammuneer/pod-name-app:1.0)
 ├── .dockerignore
 ├── k8s/
 │   ├── 00-namespace.yaml            # Namespace "assignment4"
@@ -154,6 +154,15 @@ CoreDNS is running at https://127.0.0.1:60608/api/v1/namespaces/kube-system/serv
 
 ## 4. Build the custom Docker image
 
+The image is published on Docker Hub as **[`hammuneer/pod-name-app`](https://hub.docker.com/r/hammuneer/pod-name-app)** (tags `1.0` and `latest`, for both `linux/amd64` and `linux/arm64`). The manifests use `hammuneer/pod-name-app:1.0`, so **you can skip this section**: Kubernetes pulls the image automatically on `kubectl apply`.
+
+```bash
+docker pull hammuneer/pod-name-app:1.0      # optional: pull it yourself
+```
+
+### Build it yourself (optional)
+To build the image from source instead, follow the steps below.
+
 ```bash
 # 1. Build the image on the host
 docker build -t pod-name-app:1.0 .
@@ -171,9 +180,18 @@ minikube image ls | grep pod-name-app     # -> docker.io/library/pod-name-app:1.
 ![Build custom image and load into Minikube](screenshots/02-image-build-and-load.png)
 
 
-**Why `minikube image load`?** Minikube runs its own container runtime (containerd) inside the node, which cannot see images built by Docker Desktop on the host. `image load` copies the image in, so no registry (Docker Hub) is needed.
+**Why `minikube image load`?** Minikube runs its own container runtime (containerd) inside the node, which cannot see images built by Docker Desktop on the host. `image load` copies the image in, so no registry is needed. To use a locally built image, change `image:` in `k8s/01-03` to `pod-name-app:1.0` and `imagePullPolicy` to `Never`.
 
-**Why tag `1.0` and not `latest`?** With the `:latest` tag Kubernetes defaults to `imagePullPolicy: Always` and would try to download the image from Docker Hub, which fails for a local-only image. The manifests also set `imagePullPolicy: Never`.
+### Push to Docker Hub (how the published image was made)
+```bash
+docker login                                   # Docker Hub account
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t hammuneer/pod-name-app:1.0 -t hammuneer/pod-name-app:latest --push .
+docker buildx imagetools inspect hammuneer/pod-name-app:1.0   # lists linux/amd64 + linux/arm64
+```
+`buildx --platform` builds one image per CPU architecture under the same tag, so it runs natively on Intel/AMD machines and on Apple Silicon. `--push` uploads it to Docker Hub.
+
+**Why does the manifest use tag `1.0` and not `latest`?** With `:latest`, Kubernetes defaults to `imagePullPolicy: Always` and re-downloads the image on every pod start. A fixed version tag is reproducible, and the manifests set `imagePullPolicy: IfNotPresent`, which pulls once and then uses the cached copy.
 
 Dockerfile highlights:
 - `FROM python:3.12-slim`: small official base image.
@@ -441,8 +459,8 @@ LoadBalancer  http://127.0.0.1:8080              -> OK   Hello from pod: app-loa
 | `metadata.namespace` | `assignment4` | Groups all resources; one-command cleanup |
 | `spec.replicas` | `2` | Two pods per deployment, which shows load-balancing and gives redundancy |
 | `spec.selector.matchLabels` / `template.metadata.labels` | `app: app-<type>` | Links the Deployment to its pods; the Service selects pods with the same label |
-| `image` | `pod-name-app:1.0` | The custom image built in section 4 |
-| `imagePullPolicy` | `Never` | Use the image loaded into Minikube; never contact a registry |
+| `image` | `hammuneer/pod-name-app:1.0` | The custom image from section 4, public on Docker Hub |
+| `imagePullPolicy` | `IfNotPresent` | Pull from Docker Hub only if the node does not already have the image |
 | `containerPort` | `8080` (named `http`) | Port the app listens on |
 | `env[].valueFrom.fieldRef` | `metadata.name`, `status.podIP`, `spec.nodeName` | **Downward API**: injects the pod's own name/IP/node so the app can display them |
 | `readinessProbe` | `GET /healthz` every 5s | Pod is added to the Service endpoints only once it is ready |
@@ -473,7 +491,8 @@ minikube delete                        # (optional) delete the cluster completel
 ## 10. Troubleshooting
 | Symptom | Cause / Fix |
 |---------|-------------|
-| Pod status `ErrImageNeverPull` | Image not inside Minikube; run `minikube image load pod-name-app:1.0` |
+| Pod status `ErrImagePull` / `ImagePullBackOff` | Minikube cannot reach Docker Hub; check internet access, or `docker pull hammuneer/pod-name-app:1.0 && minikube image load hammuneer/pod-name-app:1.0` |
+| Pod status `ErrImageNeverPull` (local-build variant) | Image not inside Minikube; run `minikube image load pod-name-app:1.0` |
 | `EXTERNAL-IP` stays `<pending>` | `minikube tunnel` is not running; start it in a separate terminal |
 | `curl $(minikube ip):30080` times out on macOS/Windows | Docker-driver networking; use `minikube service svc-nodeport -n assignment4 --url` |
 | `kubectl run -i` prints only some lines | Output began before kubectl attached; the commands above start with `sleep 2` |
@@ -490,5 +509,7 @@ minikube delete                        # (optional) delete the cluster completel
 - Kubernetes – Downward API (expose pod info to containers): <https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/>
 - Kubernetes – Liveness/Readiness probes: <https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/>
 - Docker – Dockerfile reference: <https://docs.docker.com/reference/dockerfile/>
+- Docker – Multi-platform builds (`buildx --platform`): <https://docs.docker.com/build/building/multi-platform/>
+- This project's image on Docker Hub: <https://hub.docker.com/r/hammuneer/pod-name-app>
 - Base image `python:3.12-slim`: <https://hub.docker.com/_/python>
 - Test client image `curlimages/curl`: <https://hub.docker.com/r/curlimages/curl>
