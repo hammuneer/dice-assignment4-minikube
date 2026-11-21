@@ -1,0 +1,11 @@
+$ kubectl get services -n assignment4 -o wide
+NAME               TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE   SELECTOR
+svc-clusterip      ClusterIP      10.106.189.74   <none>        80/TCP           14s   app=app-clusterip
+svc-loadbalancer   LoadBalancer   10.109.70.57    <pending>     8080:32345/TCP   14s   app=app-loadbalancer
+svc-nodeport       NodePort       10.100.41.176   <none>        80:30080/TCP     14s   app=app-nodeport
+
+$ kubectl get endpoints -n assignment4
+NAME               ENDPOINTS                          AGE
+svc-clusterip      10.244.0.7:8080,10.244.0.8:8080    14s
+svc-loadbalancer   10.244.0.10:8080,10.244.0.9:8080   14s
+svc-nodeport       10.244.0.5:8080,10.244.0.6:8080    14s

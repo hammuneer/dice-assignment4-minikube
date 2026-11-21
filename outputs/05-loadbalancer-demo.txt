@@ -1,0 +1,28 @@
+### 1) BEFORE minikube tunnel: no external IP yet
+$ kubectl get svc svc-loadbalancer -n assignment4
+NAME               TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+svc-loadbalancer   LoadBalancer   10.109.70.57   <pending>     8080:32345/TCP   101s
+
+### 2) Start the tunnel (in a separate terminal, leave it running)
+$ minikube tunnel
+* Tunnel successfully started
+
+* NOTE: Please do not close this terminal as this process must stay alive for the tunnel to be accessible ...
+
+* Starting tunnel for service svc-loadbalancer.
+
+### 3) AFTER minikube tunnel: EXTERNAL-IP is assigned
+$ kubectl get svc svc-loadbalancer -n assignment4
+NAME               TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+svc-loadbalancer   LoadBalancer   10.109.70.57   127.0.0.1     8080:32345/TCP   105s
+
+### 4) From OUTSIDE the cluster (host Mac) via EXTERNAL-IP -> WORKS
+$ for i in $(seq 6); do curl -s http://127.0.0.1:8080/; done
+Hello from pod: app-loadbalancer-5897f995b7-mqxcw (app=app-loadbalancer, service=LoadBalancer)
+Hello from pod: app-loadbalancer-5897f995b7-mqxcw (app=app-loadbalancer, service=LoadBalancer)
+Hello from pod: app-loadbalancer-5897f995b7-kqmsz (app=app-loadbalancer, service=LoadBalancer)
+Hello from pod: app-loadbalancer-5897f995b7-mqxcw (app=app-loadbalancer, service=LoadBalancer)
+Hello from pod: app-loadbalancer-5897f995b7-mqxcw (app=app-loadbalancer, service=LoadBalancer)
+Hello from pod: app-loadbalancer-5897f995b7-kqmsz (app=app-loadbalancer, service=LoadBalancer)
+$ curl -s http://127.0.0.1:8080/api
+{"app": "app-loadbalancer", "pod_name": "app-loadbalancer-5897f995b7-mqxcw", "pod_ip": "10.244.0.10", "node_name": "minikube", "service_type": "LoadBalancer", "time_utc": "2026-11-21 15:25:25"}

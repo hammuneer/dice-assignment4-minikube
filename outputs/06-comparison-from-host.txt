@@ -1,0 +1,4 @@
+### Same test from the host Mac (outside the cluster), minikube tunnel running
+ClusterIP     http://10.106.189.74:80            -> FAIL (no route / timeout)
+NodePort      http://192.168.49.2:30080          -> FAIL (no route / timeout)
+LoadBalancer  http://127.0.0.1:8080              -> OK   Hello from pod: app-loadbalancer-5897f995b7-kqmsz (app=app-loadbalancer, service=LoadBalancer)

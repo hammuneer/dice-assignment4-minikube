@@ -1,0 +1,28 @@
+$ minikube ip
+192.168.49.2
+
+### 1) Inside the cluster: a pod calls <NodeIP>:30080 -> WORKS
+$ kubectl run tmp-client -n assignment4 --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- sh -c 'for i in $(seq 4); do curl -s http://192.168.49.2:30080/; done'
+Hello from pod: app-nodeport-8468d95644-cbth8 (app=app-nodeport, service=NodePort)
+Hello from pod: app-nodeport-8468d95644-cbth8 (app=app-nodeport, service=NodePort)
+Hello from pod: app-nodeport-8468d95644-gkdwl (app=app-nodeport, service=NodePort)
+Hello from pod: app-nodeport-8468d95644-gkdwl (app=app-nodeport, service=NodePort)
+--- also reachable inside via its ClusterIP/DNS like any service:
+Hello from pod: app-nodeport-8468d95644-cbth8 (app=app-nodeport, service=NodePort)
+
+### 2) On the node itself (minikube ssh) -> WORKS
+$ minikube ssh -- curl -s localhost:30080
+Hello from pod: app-nodeport-8468d95644-gkdwl (app=app-nodeport, service=NodePort)
+
+### 3) From the host Mac directly to <NodeIP>:30080 (docker driver on macOS) -> times out
+$ curl --max-time 5 http://192.168.49.2:30080/
+curl: (28) Connection timed out after 5003 milliseconds
+(exit code: 28)
+### 4) From the host Mac through minikube's NodePort tunnel -> WORKS
+$ minikube service svc-nodeport -n assignment4 --url
+http://127.0.0.1:60718
+$ curl http://127.0.0.1:60718/   (x4)
+Hello from pod: app-nodeport-8468d95644-gkdwl (app=app-nodeport, service=NodePort)
+Hello from pod: app-nodeport-8468d95644-gkdwl (app=app-nodeport, service=NodePort)
+Hello from pod: app-nodeport-8468d95644-gkdwl (app=app-nodeport, service=NodePort)
+Hello from pod: app-nodeport-8468d95644-gkdwl (app=app-nodeport, service=NodePort)

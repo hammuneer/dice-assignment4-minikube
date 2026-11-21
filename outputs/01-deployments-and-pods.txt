@@ -1,0 +1,14 @@
+$ kubectl get deployments -n assignment4
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+app-clusterip      2/2     2            2           9s
+app-loadbalancer   2/2     2            2           9s
+app-nodeport       2/2     2            2           9s
+
+$ kubectl get pods -n assignment4 -o wide
+NAME                                READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+app-clusterip-7c87d8c86d-8zwhl      1/1     Running   0          9s    10.244.0.8    minikube   <none>           <none>
+app-clusterip-7c87d8c86d-z2wf5      1/1     Running   0          9s    10.244.0.7    minikube   <none>           <none>
+app-loadbalancer-5897f995b7-kqmsz   1/1     Running   0          8s    10.244.0.9    minikube   <none>           <none>
+app-loadbalancer-5897f995b7-mqxcw   1/1     Running   0          8s    10.244.0.10   minikube   <none>           <none>
+app-nodeport-8468d95644-cbth8       1/1     Running   0          9s    10.244.0.5    minikube   <none>           <none>
+app-nodeport-8468d95644-gkdwl       1/1     Running   0          9s    10.244.0.6    minikube   <none>           <none>

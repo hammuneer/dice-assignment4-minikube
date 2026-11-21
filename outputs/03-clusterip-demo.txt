@@ -1,0 +1,16 @@
+### 1) From OUTSIDE the cluster (the host Mac) -> FAILS
+$ curl --max-time 5 http://10.106.189.74/
+curl: (28) Connection timed out after 5006 milliseconds
+(exit code: 28)
+
+### 2) From INSIDE the cluster (a temporary curl pod) -> WORKS
+$ kubectl run tmp-client -n assignment4 --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- sh -c 'for i in $(seq 6); do curl -s http://svc-clusterip.assignment4.svc.cluster.local/; done'
+--- by DNS name svc-clusterip.assignment4.svc.cluster.local:
+Hello from pod: app-clusterip-7c87d8c86d-8zwhl (app=app-clusterip, service=ClusterIP)
+Hello from pod: app-clusterip-7c87d8c86d-z2wf5 (app=app-clusterip, service=ClusterIP)
+Hello from pod: app-clusterip-7c87d8c86d-z2wf5 (app=app-clusterip, service=ClusterIP)
+Hello from pod: app-clusterip-7c87d8c86d-8zwhl (app=app-clusterip, service=ClusterIP)
+Hello from pod: app-clusterip-7c87d8c86d-z2wf5 (app=app-clusterip, service=ClusterIP)
+Hello from pod: app-clusterip-7c87d8c86d-8zwhl (app=app-clusterip, service=ClusterIP)
+--- by ClusterIP 10.106.189.74:
+Hello from pod: app-clusterip-7c87d8c86d-z2wf5 (app=app-clusterip, service=ClusterIP)
